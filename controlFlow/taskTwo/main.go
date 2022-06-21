@@ -15,19 +15,16 @@ func main() {
 	dividedInput := strings.Split(input, " ")
 
 	for i, v := range dividedInput {
-		if i == 0 {
-			intOfValue, err := strconv.Atoi(v)
-			if err != nil {
-				log.Fatal(err)
-			}
-			min, max = int32(intOfValue), int32(intOfValue)
-			continue
-		}
-
 		intOfValue, err := strconv.Atoi(v)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		if i == 0 {
+			min, max = int32(intOfValue), int32(intOfValue)
+			continue
+		}
+
 		if int32(intOfValue) < min {
 			min = int32(intOfValue)
 		}
