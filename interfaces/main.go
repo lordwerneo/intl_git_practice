@@ -57,27 +57,27 @@ func (c cow) returnAnimalWeight() int {
 	return c.weight
 }
 
-type getFeedAmount interface {
+type feedAmountGetter interface {
 	feedPerMonth() int
 }
 
-type getAnimalName interface {
+type animalNameGetter interface {
 	String() string
 }
 
-type getAnimalWeight interface {
+type animalWeightGetter interface {
 	returnAnimalWeight() int
 }
 
-type getAnimalInfo interface {
-	getFeedAmount
-	getAnimalName
-	getAnimalWeight
+type animalInfoGetter interface {
+	feedAmountGetter
+	animalNameGetter
+	animalWeightGetter
 }
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	var animals []getAnimalInfo
+	var animals []animalInfoGetter
 
 	for i := 0; i < rand.Intn(5)+1; i++ {
 		animals = append(animals, cat{weight: int(rand.Intn(7) + 3), feedConsumption: 7})
@@ -93,7 +93,7 @@ func main() {
 	fmt.Printf("Total amount of feed needed: %d", totalFeed)
 }
 
-func calculateFoodConsumption(animals []getAnimalInfo) int {
+func calculateFoodConsumption(animals []animalInfoGetter) int {
 	var totalFeed int
 	feedPerAnimal := make(map[string]int)
 
