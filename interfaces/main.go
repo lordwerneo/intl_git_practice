@@ -1,61 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"time"
 )
-
-type cat struct {
-	weight          int
-	feedConsumption int
-}
-
-func (c cat) feedPerMonth() int {
-	return c.weight * c.feedConsumption
-}
-
-func (c cat) String() string {
-	return "Cat"
-}
-
-func (c cat) returnAnimalWeight() int {
-	return c.weight
-}
-
-type dog struct {
-	weight          int
-	feedConsumption int
-}
-
-func (d dog) feedPerMonth() int {
-	return d.weight * d.feedConsumption
-}
-
-func (d dog) String() string {
-	return "Dog"
-}
-
-func (d dog) returnAnimalWeight() int {
-	return d.weight
-}
-
-type cow struct {
-	weight          int
-	feedConsumption int
-}
-
-func (c cow) feedPerMonth() int {
-	return c.weight * c.feedConsumption
-}
-
-func (c cow) String() string {
-	return "Cow"
-}
-
-func (c cow) returnAnimalWeight() int {
-	return c.weight
-}
 
 type feedAmountGetter interface {
 	feedPerMonth() int
@@ -69,43 +20,134 @@ type animalWeightGetter interface {
 	returnAnimalWeight() int
 }
 
+type animalMinimumWeightGetter interface {
+	returnMinimalWeight() int
+}
+
+type edibleStatusGetter interface {
+	returnEdibleStatus() bool
+}
+
+type impersonateStatusGetter interface {
+	returnImpersonateStatus() string
+}
+
 type animalInfoGetter interface {
 	feedAmountGetter
 	animalNameGetter
 	animalWeightGetter
+	animalMinimumWeightGetter
+	edibleStatusGetter
+	impersonateStatusGetter
 }
+
+var wrongType = errors.New("wrong type")
+var lowWeight = errors.New("weight is too low")
+var isNotEdible = errors.New("is not edible")
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	var animals []animalInfoGetter
 
-	for i := 0; i < rand.Intn(5)+1; i++ {
-		animals = append(animals, cat{weight: int(rand.Intn(7) + 3), feedConsumption: 7})
+	for i := 0; i < rand.Intn(2)+1; i++ {
+		animals = append(animals, cat{name: fmt.Sprintf("IAmCat%d", i), weight: int(rand.Intn(8) + 2),
+			feedConsumption: 7, isEdible: false, minimalWeight: 3, impersonate: generateRandomResponse()})
 	}
-	for i := 0; i < rand.Intn(5)+1; i++ {
-		animals = append(animals, dog{weight: int(rand.Intn(62) + 3), feedConsumption: 2})
+	for i := 0; i < rand.Intn(2)+1; i++ {
+		animals = append(animals, dog{name: fmt.Sprintf("IAmDog%d", i), weight: int(rand.Intn(63) + 2),
+			feedConsumption: 2, isEdible: false, minimalWeight: 3, impersonate: generateRandomResponse()})
 	}
-	for i := 0; i < rand.Intn(5)+1; i++ {
-		animals = append(animals, cow{weight: int(rand.Intn(400) + 700), feedConsumption: 25})
+	for i := 0; i < rand.Intn(2)+1; i++ {
+		animals = append(animals, cow{name: fmt.Sprintf("IAmCow%d", i), weight: int(rand.Intn(500) + 600),
+			feedConsumption: 25, isEdible: true, minimalWeight: 600, impersonate: generateRandomResponse()})
 	}
 
-	totalFeed := calculateFoodConsumption(animals)
-	fmt.Printf("Total amount of feed needed: %d", totalFeed)
+	totalFeed, err := calculateFoodConsumption(animals)
+	if err != nil {
+		err = fmt.Errorf("stop working, critical error: %w", err)
+		fmt.Println(err)
+	} else {
+		fmt.Printf("Total amount of feed needed: %d", totalFeed)
+	}
 }
 
-func calculateFoodConsumption(animals []animalInfoGetter) int {
+func calculateFoodConsumption(animals []animalInfoGetter) (int, error) {
 	var totalFeed int
-	feedPerAnimal := make(map[string]int)
-
 	for _, v := range animals {
+		err := validateAnimals(v)
+		if err != nil {
+			if errors.Is(err, lowWeight) {
+				err = fmt.Errorf("validation failed: %w", err)
+				err = fmt.Errorf("for %s: %w", v, err)
+				return 0, err
+			} else if errors.Is(err, wrongType) {
+				err = fmt.Errorf("validation failed: %w", err)
+				err = fmt.Errorf("for %s: %w", v, err)
+				fmt.Println(err)
+				continue
+			} else if errors.Is(err, isNotEdible) {
+				err = fmt.Errorf("validation failed: %w", err)
+				err = fmt.Errorf("for %s: %w", v, err)
+				fmt.Println(err)
+				continue
+			}
+		}
 		requiredFeed := v.feedPerMonth()
 		totalFeed += requiredFeed
-		feedPerAnimal[v.String()] += requiredFeed
 		fmt.Printf("This is %s, it weights %d, and it needs %d of feed per month.\n", v.String(), v.returnAnimalWeight(), requiredFeed)
 	}
+	return totalFeed, nil
+}
 
-	for k, v := range feedPerAnimal {
-		fmt.Printf("%ss need a total of %d of feed.\n", k, v)
+func validateAnimals(animal animalInfoGetter) error {
+	err := checkWeight(animal)
+	if err != nil {
+		err = fmt.Errorf("minimal weight is %d, but it weights %d: %w", animal.returnMinimalWeight(),
+			animal.returnAnimalWeight(), err)
+		return err
 	}
-	return totalFeed
+	err = checkType(animal)
+	if err != nil {
+		err = fmt.Errorf("animal impersonate %s, but actually is %s: %w", animal.returnImpersonateStatus(),
+			reflect.TypeOf(animal).Name(), err)
+		return err
+	}
+	err = checkIfEdible(animal)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkType(animal animalInfoGetter) error {
+	if reflect.TypeOf(animal).Name() != animal.returnImpersonateStatus() {
+		return wrongType
+	}
+	return nil
+}
+
+func checkWeight(animal animalInfoGetter) error {
+	if animal.returnAnimalWeight() < animal.returnMinimalWeight() {
+		return lowWeight
+	}
+	return nil
+}
+
+func checkIfEdible(animal animalInfoGetter) error {
+	if !animal.returnEdibleStatus() {
+		return isNotEdible
+	}
+	return nil
+}
+
+func generateRandomResponse() (iAm string) {
+	switch rand.Intn(3) {
+	case 0:
+		iAm = "cat"
+	case 1:
+		iAm = "dog"
+	case 2:
+		iAm = "cow"
+	}
+	return iAm
 }
