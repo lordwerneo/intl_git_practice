@@ -43,7 +43,7 @@ type animalInfoGetter interface {
 
 var wrongType = errors.New("wrong type")
 var lowWeight = errors.New("weight is too low")
-var isNotEdible = errors.New("is not edible")
+var isNotEdible = errors.New("wrong edible status")
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
@@ -114,6 +114,8 @@ func validateAnimals(animal animalInfoGetter) error {
 	}
 	err = checkIfEdible(animal)
 	if err != nil {
+		err = fmt.Errorf("animal edible status is %v, but should be %v: %w", animal.returnEdibleStatus(),
+			!animal.returnEdibleStatus(), err)
 		return err
 	}
 	return nil
@@ -134,8 +136,14 @@ func checkWeight(animal animalInfoGetter) error {
 }
 
 func checkIfEdible(animal animalInfoGetter) error {
-	if !animal.returnEdibleStatus() {
-		return isNotEdible
+	if reflect.TypeOf(animal).Name() == "cow" {
+		if !animal.returnEdibleStatus() {
+			return isNotEdible
+		}
+	} else {
+		if animal.returnEdibleStatus() {
+			return isNotEdible
+		}
 	}
 	return nil
 }
