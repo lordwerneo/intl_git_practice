@@ -76,16 +76,17 @@ func calculateFoodConsumption(animals []animalInfoGetter) (int, error) {
 	for _, v := range animals {
 		err := validateAnimals(v)
 		if err != nil {
-			if errors.Is(err, lowWeight) {
+			switch {
+			case errors.Is(err, lowWeight):
 				err = fmt.Errorf("validation failed: %w", err)
 				err = fmt.Errorf("for %s: %w", v, err)
 				return 0, err
-			} else if errors.Is(err, wrongType) {
+			case errors.Is(err, wrongType):
 				err = fmt.Errorf("validation failed: %w", err)
 				err = fmt.Errorf("for %s: %w", v, err)
 				fmt.Println(err)
 				continue
-			} else if errors.Is(err, isNotEdible) {
+			case errors.Is(err, isNotEdible):
 				err = fmt.Errorf("validation failed: %w", err)
 				err = fmt.Errorf("for %s: %w", v, err)
 				fmt.Println(err)
