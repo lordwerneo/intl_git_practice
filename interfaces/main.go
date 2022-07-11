@@ -66,9 +66,9 @@ func main() {
 	if err != nil {
 		err = fmt.Errorf("stop working, critical error: %w", err)
 		fmt.Println(err)
-	} else {
-		fmt.Printf("Total amount of feed needed: %d", totalFeed)
+		return
 	}
+	fmt.Printf("Total amount of feed needed: %d", totalFeed)
 }
 
 func calculateFoodConsumption(animals []animalInfoGetter) (int, error) {
