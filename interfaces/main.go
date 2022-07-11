@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"reflect"
 	"time"
 )
 
@@ -41,9 +40,9 @@ type animalInfoGetter interface {
 	impersonateStatusGetter
 }
 
-var wrongType = errors.New("wrong type")
-var lowWeight = errors.New("weight is too low")
-var isNotEdible = errors.New("wrong edible status")
+var ErrWrongType = errors.New("wrong type")
+var ErrLowWeight = errors.New("weight is too low")
+var ErrIsNotEdible = errors.New("wrong edible status")
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
@@ -77,19 +76,22 @@ func calculateFoodConsumption(animals []animalInfoGetter) (int, error) {
 		err := validateAnimals(v)
 		if err != nil {
 			switch {
-			case errors.Is(err, lowWeight):
+			case errors.Is(err, ErrLowWeight):
 				err = fmt.Errorf("validation failed: %w", err)
 				err = fmt.Errorf("for %s: %w", v, err)
 				return 0, err
-			case errors.Is(err, wrongType):
+			case errors.Is(err, ErrWrongType):
 				err = fmt.Errorf("validation failed: %w", err)
 				err = fmt.Errorf("for %s: %w", v, err)
 				fmt.Println(err)
 				continue
-			case errors.Is(err, isNotEdible):
+			case errors.Is(err, ErrIsNotEdible):
 				err = fmt.Errorf("validation failed: %w", err)
 				err = fmt.Errorf("for %s: %w", v, err)
 				fmt.Println(err)
+				continue
+			default:
+				fmt.Printf("unexpected error: %s\n", err)
 				continue
 			}
 		}
@@ -107,8 +109,8 @@ func validateAnimals(animal animalInfoGetter) error {
 		return err
 	}
 	if err := checkType(animal); err != nil {
-		err = fmt.Errorf("animal impersonate %s, but actually is %s: %w", animal.returnImpersonateStatus(),
-			reflect.TypeOf(animal).Name(), err)
+		err = fmt.Errorf("animal impersonate %s, but actually is %T: %w", animal.returnImpersonateStatus(),
+			animal, err)
 		return err
 	}
 
@@ -121,28 +123,33 @@ func validateAnimals(animal animalInfoGetter) error {
 }
 
 func checkType(animal animalInfoGetter) error {
-	if fmt.Sprintf("%T", animal) != fmt.Sprintf("main.%s", animal.returnImpersonateStatus()) {
-		return wrongType
+	switch animal.(type) {
+	case cat:
+		if animal.returnImpersonateStatus() != "cat" {
+			return ErrWrongType
+		}
+	case dog:
+		if animal.returnImpersonateStatus() != "dog" {
+			return ErrWrongType
+		}
+	case cow:
+		if animal.returnImpersonateStatus() != "cow" {
+			return ErrWrongType
+		}
 	}
 	return nil
 }
 
 func checkWeight(animal animalInfoGetter) error {
 	if animal.returnAnimalWeight() < animal.returnMinimalWeight() {
-		return lowWeight
+		return ErrLowWeight
 	}
 	return nil
 }
 
 func checkIfEdible(animal animalInfoGetter) error {
-	if reflect.TypeOf(animal).Name() == "cow" {
-		if !animal.returnEdibleStatus() {
-			return isNotEdible
-		}
-	} else {
-		if animal.returnEdibleStatus() {
-			return isNotEdible
-		}
+	if !animal.returnEdibleStatus() {
+		return ErrIsNotEdible
 	}
 	return nil
 }
