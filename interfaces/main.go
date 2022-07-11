@@ -121,7 +121,7 @@ func validateAnimals(animal animalInfoGetter) error {
 }
 
 func checkType(animal animalInfoGetter) error {
-	if reflect.TypeOf(animal).Name() != animal.returnImpersonateStatus() {
+	if fmt.Sprintf("%T", animal) != fmt.Sprintf("main.%s", animal.returnImpersonateStatus()) {
 		return wrongType
 	}
 	return nil
