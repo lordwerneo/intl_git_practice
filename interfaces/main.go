@@ -101,20 +101,18 @@ func calculateFoodConsumption(animals []animalInfoGetter) (int, error) {
 }
 
 func validateAnimals(animal animalInfoGetter) error {
-	err := checkWeight(animal)
-	if err != nil {
+	if err := checkWeight(animal); err != nil {
 		err = fmt.Errorf("minimal weight is %d, but it weights %d: %w", animal.returnMinimalWeight(),
 			animal.returnAnimalWeight(), err)
 		return err
 	}
-	err = checkType(animal)
-	if err != nil {
+	if err := checkType(animal); err != nil {
 		err = fmt.Errorf("animal impersonate %s, but actually is %s: %w", animal.returnImpersonateStatus(),
 			reflect.TypeOf(animal).Name(), err)
 		return err
 	}
-	err = checkIfEdible(animal)
-	if err != nil {
+
+	if err := checkIfEdible(animal); err != nil {
 		err = fmt.Errorf("animal edible status is %v, but should be %v: %w", animal.returnEdibleStatus(),
 			!animal.returnEdibleStatus(), err)
 		return err
