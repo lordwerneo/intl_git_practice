@@ -49,8 +49,10 @@ func Test_Do(t *testing.T) {
 			result, err := Do(testCase.someString, testCase.someInt, testCase.someBool)
 			t.Logf("Calling Do(%s, %d, %v), result: \"%s\", error: \"%s\"\n",
 				testCase.someString, testCase.someInt, testCase.someBool, result, err)
-			if err != nil {
+			if testCase.expectedError != "" {
 				assert.EqualError(tt, err, testCase.expectedError, fmt.Sprintf("Incorrect error. Expected: %v, got %v", testCase.expectedError, err))
+			} else {
+				assert.NoError(tt, err, fmt.Sprintf("Got error %v, but error wasn't expected.", err))
 			}
 			assert.Equal(tt, testCase.expectedResult, result, fmt.Sprintf("Incorrect result. Expected: %s, got %s", testCase.expectedResult, result))
 		})
