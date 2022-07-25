@@ -18,18 +18,17 @@ func main() {
 	// Ваша реалізація
 	var sum int
 	var ch = make(chan int)
-	go func(ch chan int, intSlice [][]int) {
-		for _, slice := range intSlice {
+	for _, slice := range n {
+		go func(ch chan int, slice []int) {
 			result := 0
 			for _, v := range slice {
 				result += v
 			}
 			ch <- result
-		}
-		close(ch)
-	}(ch, n)
-	for value := range ch {
-		sum += value
+		}(ch, slice)
+	}
+	for i := 0; i < len(n); i++ {
+		sum += <-ch
 	}
 	fmt.Printf("result: %d", sum)
 }
