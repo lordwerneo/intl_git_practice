@@ -30,5 +30,6 @@ func main() {
 	for i := 0; i < len(n); i++ {
 		sum += <-ch
 	}
+	close(ch)
 	fmt.Printf("result: %d", sum)
 }
